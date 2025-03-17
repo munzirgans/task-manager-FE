@@ -1,103 +1,158 @@
+"use client"
+
 import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+interface FormData{
+  username: string;
+  password: string;
+}
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  useEffect(() => {
+    const token = localStorage.getItem("access_token");
+    if(token){
+      window.location.href = "/dashboard";
+    }
+  }, [])
+  const [formData, setFormData] = useState<FormData>({
+      username: '',
+      password: '',
+  });
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleSubmit = async (e:React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try{
+      const result = await fetch('http://localhost:8000/login',{
+        method: "POST",
+        headers: {
+          'Content-Type' : 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if(!result.ok){
+        const errorResponse = await result.json();
+        throw new Error(errorResponse.message || 'Unknown error occurred');
+      }
+
+      const data = await result.json();
+      setSuccess(true);
+      if(data.access_token){
+        localStorage.setItem("access_token", data.access_token);
+        window.location.href = "/dashboard";
+      }
+    }catch(error){
+      if(error instanceof Error){
+        setError(error.message);
+      }
+    }finally{
+      setLoading(false);
+    }
+  }
+  return (
+    <div className="h-screen w-screen relative z-0" style={{
+      backgroundImage: "url('background.jpg')",
+      backgroundSize: 'cover'
+    }}>
+      <form className="h-screen w-screen relative z-0" onSubmit={handleSubmit}>
+        <div className="bg-black absolute w-full h-full opacity-70 flex justify-center items-center z-10"></div>
+        <div className="relative z-20 text-white w-full h-full flex justify-center items-center flex-col">
+          <div className="w-[553px] h-[80px] flex justify-center items-center">
+            <p className="font-bold text-3xl z-30">LOGIN</p>
+            <div className="absolute z-20">
+              <Image
+                src={"/bg-login.png"}
+                alt="bg"
+                width={553}
+                height={80}
+              />
+            </div>
+          </div>
+          <div className="w-[847px] h-[400px]">
+            <div className="absolute top-44 bottom-50">
+              <Image 
+                src={"/bg-1.png"}
+                alt="bg-1"
+                width={847}
+                height={400}
+              />
+            </div>
+            <div className="z-40 relative flex justify-center items-center h-full">
+              {/* <form onSubmit={}> */}
+                <div className="w-[741px] h-[186px] relative top-4">
+                  <div className="mb-4">
+                    <p className="mb-2">USERNAME</p>
+                    <div className="relative">
+                      <input type="text" placeholder="Type Here" className="border-[1px] border-[#189BFA] w-full placeholder:text-[#28A5C3] py-3 px-4 pl-12" name="username" onChange={handleChange}/>
+                      <div className="absolute top-2 left-2">
+                        <Image 
+                          src={'/fa-user.png'}
+                          alt="fa-user"
+                          width={34}
+                          height={36}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="mb-2">PASSWORD</p>
+                    <div className="relative">
+                      <input type="password" placeholder="Type Here" className="border-[1px] border-[#189BFA] w-full placeholder:text-[#28A5C3] py-3 px-4 pl-12" name="password" onChange={handleChange}/>
+                      <div className="absolute top-2 left-2">
+                        <Image 
+                          src={'/fa-lock.png'}
+                          alt="fa-lock"
+                          width={34}
+                          height={36}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {/* </form> */}
+            </div>
+          </div>
+          <div className="absolute w-[824px] h-[376px] top-47">
+            <div className="absolute">
+              <Image 
+                src={"/bg-2.png"}
+                alt="bg-2"
+                width={824}
+                height={376}
+              />
+            </div>
+          </div>
+          <div className='mt-12'>
+              <p>Don&apos;t Have an Account? Register <Link href='/register' className='underline text-blue-500 font-bold'>Here</Link></p>
+          </div>
+          {error && <div style={{ color: 'red' }}>{error}</div>}
+          {success && <div style={{ color: 'green' }}>Login successful!</div>}
+          {loading ? 'Logging in...' : 
+            <button className="w-[360px] h-[48px] flex justify-center items-center relative top-2 cursor-pointer" type="submit">
+              <div className="absolute w-full h-full">
+                <Image 
+                src={"/btn-login.png"}
+                alt="btn-login"
+                width={360}
+                height={48}
+                />
+              </div>
+              <p className="text-2xl font-bold z-30">LOGIN</p>
+            </button>
+          }
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </form>
     </div>
   );
 }
